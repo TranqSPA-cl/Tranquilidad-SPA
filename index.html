@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TRANQUILIDAD SPA - Sistema Scrum</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <div class="auth-wrapper" id="authWrapper">
+    
+    <div class="login-card" id="loginContainer">
+      <div class="spa-logo">🍃</div>
+      <h1 id="siteTitleLogin">TRANQUILIDAD SPA</h1>
+      <p class="subtitle">Sistema Scrum</p>
+      
+      <div class="input-group">
+        <input type="email" id="loginEmail" placeholder="Correo electrónico (ej: ramiro@spa.com)" required>
+      </div>
+      <div class="input-group">
+        <input type="password" id="loginPassword" placeholder="Contraseña" required>
+      </div>
+      
+      <button class="btn btn-primary" onclick="login()">Iniciar Sesión</button>
+      <button class="btn btn-secondary" onclick="showRegister()">Registrarse</button>
+    </div>
+
+    <div class="login-card hidden" id="registerContainer">
+      <div class="spa-logo">🌸</div>
+      <h1>Crear Cuenta</h1>
+      <p class="subtitle">Únete al equipo</p>
+      
+      <div class="input-group">
+        <input type="text" id="registerName" placeholder="Nombre completo">
+      </div>
+      <div class="input-group">
+        <input type="email" id="registerEmail" placeholder="Correo electrónico">
+      </div>
+      <div class="input-group">
+        <input type="password" id="registerPassword" placeholder="Contraseña">
+      </div>
+      <div class="input-group">
+        <select id="registerRole">
+          <option value="cliente">Cliente</option>
+          <option value="recepcionista">Recepcionista</option>
+          <option value="masajista">Masajista</option>
+        </select>
+      </div>
+      
+      <button class="btn btn-primary" onclick="register()">Crear Cuenta</button>
+      <button class="btn btn-secondary" onclick="backLogin()">Volver al Login</button>
+    </div>
+  </div>
+
+  <div class="dashboard hidden" id="dashboard">
+    
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span>🍃</span> <span id="siteTitleSidebar">Tranquilidad</span>
+      </div>
+      <div class="user-profile-status">
+        <p id="userDisplay">Usuario</p>
+        <span class="badge" id="roleDisplay">Rol</span>
+      </div>
+      
+      <ul id="sidebarMenu">
+        </ul>
+    </aside>
+
+    <main class="main-content">
+      
+      <section id="inicio" class="section">
+        <div class="section-header">
+          <h1>Panel de Control</h1>
+          <p>Resumen general de actividad</p>
+        </div>
+        
+        <div class="cards-grid">
+          <div class="card card-accent">
+            <div class="card-icon">📅</div>
+            <div>
+              <h3>Reservas Hoy</h3>
+              <p class="card-value" id="statsReservas">24</p>
+            </div>
+          </div>
+          <div class="card card-accent perm-financial">
+            <div class="card-icon">👥</div>
+            <div>
+              <h3>Clientes Totales</h3>
+              <p class="card-value">120</p>
+            </div>
+          </div>
+          <div class="card card-accent perm-financial">
+            <div class="card-icon">💰</div>
+            <div>
+              <h3>Ingresos Mensuales</h3>
+              <p class="card-value" id="statsIngresos">$2.500.000</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="chart-wrapper">
+          <h3>Flujo de Clientes Semanal</h3>
+          <div class="chart-container">
+            <canvas id="myChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <section id="vista-cliente" class="section">
+        <div class="section-header">
+          <h1 id="welcomeCliente">¡Bienvenido a Tu Portal!</h1>
+          <p>Gestiona tus terapias de bienestar y relajación.</p>
+        </div>
+        <div class="cards-grid">
+          <div class="card">
+            <div class="card-icon">✨</div>
+            <div>
+              <h3>Puntos de Fidelidad</h3>
+              <p class="card-value">450 pts</p>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-icon">🌸</div>
+            <div>
+              <h3>Próxima Cita</h3>
+              <p class="card-value" style="font-size: 1.2rem; margin-top:5px;">Piedras Volcánicas (10:00 AM)</p>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top: 30px; background: white; padding: 25px; border-radius: 12px; box-shadow: var(--shadow-soft);">
+          <h3>Solicitar Nueva Reserva</h3>
+          <p style="color: var(--text-muted); margin-bottom: 15px;">Selecciona un servicio disponible para agendar.</p>
+          <button class="btn btn-primary" style="width: auto; padding: 10px 25px;">Agendar Masaje</button>
+        </div>
+      </section>
+
+      <section id="usuarios" class="section">
+        <div class="section-header">
+          <h1>Gestión de Personal y Clientes</h1>
+          <p>Control de acceso de usuarios registrados</p>
+        </div>
+        <div class="table-container">
+          <table class="spa-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Rol Asignado</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="usuariosTableBody">
+              </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="reservas" class="section">
+        <div class="section-header">
+          <h1>Próximas Reservas</h1>
+          <p>Tratamientos programados en la jornada</p>
+        </div>
+        <div class="bookings-grid" id="bookingsGrid">
+          <div class="booking-card">
+            <div class="booking-time">10:00 AM</div>
+            <div class="booking-body">
+              <h3>Masaje Relajante Piedras Volcánicas</h3>
+              <p><strong>Cliente:</strong> Marta del Carmen</p>
+              <p><strong>Especialista:</strong> Valentina Donoso</p>
+            </div>
+            <span class="booking-status status-confirmed">Confirmado</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="scrum" class="section">
+        <div class="section-header">
+          <h1>Scrum Board Técnico</h1>
+          <p>Sprint del sistema operativo interno</p>
+        </div>
+        <div class="scrum-board" id="scrumBoardContainer">
+          </div>
+      </section>
+
+      <section id="configuracion" class="section">
+        <div class="section-header">
+          <h1>⚙️ Panel Admin Master</h1>
+          <p>Modifica parámetros globales del SPA directamente desde la pantalla.</p>
+        </div>
+        
+        <div class="config-container">
+          <div class="config-card-form">
+            <h3>Personalización Visual</h3>
+            <div class="form-group">
+              <label>Nombre Comercial del SPA:</label>
+              <input type="text" id="cfgTitle" value="TRANQUILIDAD SPA">
+            </div>
+            <button class="btn btn-primary" onclick="saveLiveConfig()">Aplicar Cambios Globales</button>
+          </div>
+
+          <div class="config-card-form">
+            <h3>Control Operativo y Métricas</h3>
+            <div class="form-group">
+              <label>Simular Ingresos Mensuales ($):</label>
+              <input type="text" id="cfgIngresos" value="$2.500.000">
+            </div>
+            <div class="form-group">
+              <label>Simular Citas Totales:</label>
+              <input type="number" id="cfgReservas" value="24">
+            </div>
+            <button class="btn btn-primary" onclick="saveLiveConfig()">Actualizar Métricas</button>
+          </div>
+
+          <div class="config-card-form">
+            <h3>Añadir Tarea al Scrum Board</h3>
+            <div class="form-group">
+              <label>Título de la Tarea:</label>
+              <input type="text" id="taskTitle" placeholder="Ej: Pasarela de pagos">
+            </div>
+            <div class="form-group">
+              <label>Descripción:</label>
+              <input type="text" id="taskDesc" placeholder="Detalles...">
+            </div>
+            <div class="form-group">
+              <label>Columna Scrum:</label>
+              <select id="taskCol">
+                <option value="backlog">Backlog</option>
+                <option value="progress">En Progreso</option>
+                <option value="done">Finalizado</option>
+              </select>
+            </div>
+            <button class="btn btn-secondary" onclick="addLiveTask()">Insertar al Tablero</button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
