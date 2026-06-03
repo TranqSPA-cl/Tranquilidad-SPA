@@ -1,271 +1,254 @@
-let myChartInstance = null;
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TRANQUILIDAD SPA - Sistema Scrum</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
 
-// Base de datos local persistente con contraseñas reales configuradas
-let usuariosDB = JSON.parse(localStorage.getItem('usuarios_spa')) || [
-  { nombre: "Ramiro Vasquez", rol: "dueño", email: "ramiro@spa.com", password: "ramiro123" },
-  { nombre: "Valentina Donoso", rol: "masajista", email: "valentina@spa.com", password: "vale2026" },
-  { nombre: "Marta del Carmen", rol: "cliente", email: "marta@spa.com", password: "marta77" },
-  { nombre: "Juan Riquelme", rol: "recepcionista", email: "juan@spa.com", password: "juanrecep" }
-];
+  <div class="auth-wrapper" id="authWrapper">
+    
+    <div class="login-card" id="loginContainer">
+      <div class="spa-logo">🍃</div>
+      <h1 id="siteTitleLogin">TRANQUILIDAD SPA</h1>
+      <p class="subtitle">Sistema Scrum</p>
+      
+      <div class="input-group">
+        <input type="email" id="loginEmail" placeholder="Correo electrónico (ej: ramiro@spa.com)" required>
+      </div>
+      <div class="input-group">
+        <input type="password" id="loginPassword" placeholder="Contraseña" required>
+      </div>
+      
+      <button class="btn btn-primary" onclick="login()">Iniciar Sesión</button>
+      <button class="btn btn-secondary" onclick="showRegister()">Registrarse como Cliente</button>
+    </div>
 
-// Listado de tareas Scrum mutables desde la UI
-let scrumTareas = JSON.parse(localStorage.getItem('scrum_spa')) || [
-  { id: 1, titulo: "Crear Login", desc: "Diseñar interfaz con roles seguros.", col: "backlog", prio: "high" },
-  { id: 2, titulo: "Gestión de Roles", desc: "Permisos restringidos para clientes.", col: "backlog", prio: "medium" },
-  { id: 3, titulo: "Dashboard Modular", desc: "Gráficas dinámicas por Chart.js.", col: "progress", prio: "high" },
-  { id: 4, titulo: "Diseño UI Ambiente", desc: "Colores orgánicos relajantes.", col: "done", prio: "low" }
-];
+    <div class="login-card hidden" id="registerContainer">
+      <div class="spa-logo">🌸</div>
+      <h1>Crear Cuenta</h1>
+      <p class="subtitle">Únete al equipo</p>
+      
+      <div class="input-group">
+        <input type="text" id="registerName" placeholder="Nombre completo">
+      </div>
+      <div class="input-group">
+        <input type="email" id="registerEmail" placeholder="Correo electrónico">
+      </div>
+      <div class="input-group">
+        <input type="password" id="registerPassword" placeholder="Contraseña">
+      </div>
+      <div class="input-group">
+        <select id="registerRole">
+          <option value="cliente">Cliente</option>
+          <option value="recepcionista">Recepcionista</option>
+          <option value="masajista">Masajista</option>
+        </select>
+      </div>
+      
+      <button class="btn btn-primary" onclick="register()">Crear Cuenta</button>
+      <button class="btn btn-secondary" onclick="backLogin()">Volver al Login</button>
+    </div>
+  </div>
 
-// Opciones globales editables sin tocar código
-let configuracionGlobal = JSON.parse(localStorage.getItem('config_global_spa')) || {
-  tituloSpa: "TRANQUILIDAD SPA",
-  ingresos: "$2.500.000",
-  reservas: 24
-};
+  <div class="dashboard hidden" id="dashboard">
+    
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span>🍃</span> <span id="siteTitleSidebar">Tranquilidad</span>
+      </div>
+      <div class="user-profile-status">
+        <p id="userDisplay">Usuario</p>
+        <span class="badge" id="roleDisplay">Rol</span>
+      </div>
+      
+      <ul id="sidebarMenu">
+        </ul>
+      
+      <div class="sidebar-location-box">
+        📍 <strong>Ubicación:</strong>
+        <p id="sidebarLocationText">Cargando dirección...</p>
+      </div>
+    </aside>
 
-let usuarioActual = null;
+    <main class="main-content">
+      
+      <section id="inicio" class="section">
+        <div class="section-header">
+          <h1>Panel de Control</h1>
+          <p>Resumen general de actividad</p>
+        </div>
+        
+        <div class="cards-grid">
+          <div class="card card-accent">
+            <div class="card-icon">📅</div>
+            <div>
+              <h3>Reservas Totales</h3>
+              <p class="card-value" id="statsReservas">24</p>
+            </div>
+          </div>
+          <div class="card card-accent perm-financial">
+            <div class="card-icon">👥</div>
+            <div>
+              <h3>Clientes Registrados</h3>
+              <p class="card-value" id="statsClientes">120</p>
+            </div>
+          </div>
+          <div class="card card-accent perm-financial">
+            <div class="card-icon">💰</div>
+            <div>
+              <h3>Ingresos Estimados</h3>
+              <p class="card-value" id="statsIngresos">$2.500.000</p>
+            </div>
+          </div>
+        </div>
 
-document.addEventListener("DOMContentLoaded", () => {
-  applyLiveSettings();
-  actualizarTablaUsuarios();
-  renderScrumBoard();
-});
+        <div class="chart-wrapper">
+          <h3>Flujo de Clientes Semanal</h3>
+          <div class="chart-container">
+            <canvas id="myChart"></canvas>
+          </div>
+        </div>
+      </section>
 
-// APLICA PARAMETROS CAMBIADOS EN VIVO
-function applyLiveSettings() {
-  document.getElementById('siteTitleLogin').innerText = configuracionGlobal.tituloSpa;
-  document.getElementById('siteTitleSidebar').innerText = configuracionGlobal.tituloSpa;
-  document.getElementById('cfgTitle').value = configuracionGlobal.tituloSpa;
-  
-  document.getElementById('statsIngresos').innerText = configuracionGlobal.ingresos;
-  document.getElementById('cfgIngresos').value = configuracionGlobal.ingresos;
-  
-  document.getElementById('statsReservas').innerText = configuracionGlobal.reservas;
-  document.getElementById('cfgReservas').value = configuracionGlobal.reservas;
-}
+      <section id="vista-cliente" class="section">
+        <div class="section-header">
+          <h1 id="welcomeCliente">¡Bienvenido a Tu Portal!</h1>
+          <p>Gestiona tus terapias de bienestar, compra masajes y agenda citas.</p>
+        </div>
+        
+        <h2>🌿 Nuestro Catálogo de Bienestar</h2>
+        <div class="catalog-grid" id="catalogGrid">
+          </div>
 
-// LOGIN EVALUADO POR ROL Y CONTRASEÑA
-function login() {
-  const emailInput = document.getElementById('loginEmail').value.trim().toLowerCase();
-  const passwordInput = document.getElementById('loginPassword').value.trim();
+        <div class="booking-form-box">
+          <h3>📅 Agendar una Cita Nueva</h3>
+          <p class="subtitle-box">Selecciona el tratamiento que compraste o deseas tomar:</p>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label>Selecciona el Servicio:</label>
+              <select id="reservaServicio">
+                <option value="Masaje Relajante Piedras Volcánicas">Masaje Relajante Piedras Volcánicas - $45.000</option>
+                <option value="Terapia Descontracturante Profunda">Terapia Descontracturante Profunda - $55.000</option>
+                <option value="Facial Hidratante Orgánico">Facial Hidratante Orgánico - $35.000</option>
+                <option value="Circuito de Sauna y Jacuzzi Extremo">Circuito de Sauna y Jacuzzi Extremo - $60.000</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Fecha y Hora:</label>
+              <input type="datetime-local" id="reservaFechaHora">
+            </div>
+            <div class="form-group">
+              <label>Especialista sugerido:</label>
+              <select id="reservaEspecialista">
+                <option value="Valentina Donoso">Valentina Donoso (Masajista)</option>
+                <option value="Cualquier especialista disponible">Cualquier especialista disponible</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn btn-primary" style="width: auto; padding: 12px 30px; margin-top: 15px;" onclick="crearReservaCliente()">Confirmar y Agendar Cita</button>
+        </div>
+      </section>
 
-  if(!emailInput || !passwordInput) {
-    alert("Ingresa tus credenciales por favor.");
-    return;
-  }
+      <section id="usuarios" class="section">
+        <div class="section-header">
+          <h1>Gestión de Personal y Clientes</h1>
+          <p>Control de acceso de usuarios registrados (Sincronizado en tiempo real)</p>
+        </div>
+        <div class="table-container">
+          <table class="spa-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Correo Electrónico</th>
+                <th>Rol Asignado</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="usuariosTableBody">
+              </tbody>
+          </table>
+        </div>
+      </section>
 
-  const usuario = usuariosDB.find(u => u.email === emailInput && u.password === passwordInput);
-  
-  if(!usuario) {
-    alert("❌ Error: Correo o contraseña incorrectos.");
-    return;
-  }
+      <section id="reservas" class="section">
+        <div class="section-header">
+          <h1>Próximas Reservas</h1>
+          <p>Tratamientos programados en la jornada por los clientes</p>
+        </div>
+        <div class="bookings-grid" id="bookingsGrid">
+          </div>
+      </section>
 
-  usuarioActual = usuario;
+      <section id="scrum" class="section">
+        <div class="section-header">
+          <h1>Scrum Board Técnico</h1>
+          <p>Sprint del sistema operativo interno</p>
+        </div>
+        <div class="scrum-board" id="scrumBoardContainer">
+          </div>
+      </section>
 
-  document.getElementById('userDisplay').innerText = usuario.nombre;
-  document.getElementById('roleDisplay').innerText = usuario.rol.toUpperCase();
+      <section id="configuracion" class="section">
+        <div class="section-header">
+          <h1>⚙️ Panel Admin Master</h1>
+          <p>Modifica parámetros globales del SPA directamente desde la pantalla.</p>
+        </div>
+        
+        <div class="config-container">
+          <div class="config-card-form">
+            <h3>Personalización Visual y Datos</h3>
+            <div class="form-group">
+              <label>Nombre Comercial del SPA:</label>
+              <input type="text" id="cfgTitle" value="TRANQUILIDAD SPA">
+            </div>
+            <div class="form-group">
+              <label>📍 Dirección Física del SPA (Ubicación):</label>
+              <input type="text" id="cfgUbicacion" value="Av. Vitacura 4500, Santiago">
+            </div>
+            <button class="btn btn-primary" onclick="saveLiveConfig()">Aplicar Cambios Globales</button>
+          </div>
 
-  // Construir barras de opciones basadas en jerarquías
-  construirMenuLateral(usuario.rol);
+          <div class="config-card-form">
+            <h3>Control Operativo Dinámico</h3>
+            <div class="form-group">
+              <label>Simular Ingresos Mensuales ($):</label>
+              <input type="text" id="cfgIngresos" value="$2.500.000">
+            </div>
+            <button class="btn btn-primary" onclick="saveLiveConfig()">Actualizar Métricas financieros</button>
+          </div>
 
-  document.getElementById('authWrapper').classList.add('hidden');
-  document.getElementById('dashboard').classList.remove('hidden');
+          <div class="config-card-form">
+            <h3>Añadir Tarea al Scrum Board</h3>
+            <div class="form-group">
+              <label>Título de la Tarea:</label>
+              <input type="text" id="taskTitle" placeholder="Ej: Pasarela de pagos">
+            </div>
+            <div class="form-group">
+              <label>Descripción:</label>
+              <input type="text" id="taskDesc" placeholder="Detalles...">
+            </div>
+            <div class="form-group">
+              <label>Columna Scrum:</label>
+              <select id="taskCol">
+                <option value="backlog">Backlog</option>
+                <option value="progress">En Progreso</option>
+                <option value="done">Finalizado</option>
+              </select>
+            </div>
+            <button class="btn btn-secondary" onclick="addLiveTask()">Insertar al Tablero</button>
+          </div>
+        </div>
+      </section>
 
-  if(usuario.rol === 'cliente') {
-    document.getElementById('welcomeCliente').innerText = `¡Bienvenida, ${usuario.nombre}!`;
-    showSection('vista-cliente');
-  } else {
-    showSection('inicio');
-  }
-}
+    </main>
+  </div>
 
-// ARMAR MENU RESTRINGIDO
-function construirMenuLateral(rol) {
-  const menuContainer = document.getElementById('sidebarMenu');
-  menuContainer.innerHTML = "";
-
-  const opciones = [
-    { id: 'inicio', texto: '📊 Inicio', roles: ['dueño', 'recepcionista', 'masajista'] },
-    { id: 'vista-cliente', texto: '🌸 Mi Portal', roles: ['cliente'] },
-    { id: 'usuarios', texto: '👥 Usuarios', roles: ['dueño', 'recepcionista'] },
-    { id: 'reservas', texto: '📅 Reservas', roles: ['dueño', 'recepcionista', 'masajista'] },
-    { id: 'scrum', texto: '📋 Scrum Board', roles: ['dueño'] },
-    { id: 'configuracion', texto: '⚙️ Admin Master', roles: ['dueño'] }
-  ];
-
-  opciones.forEach(opc => {
-    if(opc.roles.includes(rol)) {
-      const li = document.createElement('li');
-      li.className = "nav-item";
-      li.innerHTML = opc.texto;
-      li.onclick = function() { showSection(opc.id, this); };
-      menuContainer.appendChild(li);
-    }
-  });
-
-  const logoutLi = document.createElement('li');
-  logoutLi.className = "nav-item logout-item";
-  logoutLi.innerHTML = "🚪 Cerrar Sesión";
-  logoutLi.onclick = logout;
-  menuContainer.appendChild(logoutLi);
-}
-
-// CONTROL SEGURO DE PESTAÑAS
-function showSection(sectionId, element) {
-  if(!usuarioActual) return;
-
-  const reglasAcceso = {
-    'inicio': ['dueño', 'recepcionista', 'masajista'],
-    'vista-cliente': ['cliente'],
-    'usuarios': ['dueño', 'recepcionista'],
-    'reservas': ['dueño', 'recepcionista', 'masajista'],
-    'scrum': ['dueño'],
-    'configuracion': ['dueño']
-  };
-
-  if(!reglasAcceso[sectionId].includes(usuarioActual.rol)) {
-    alert("⛔ Acceso denegado.");
-    return;
-  }
-
-  const sections = document.querySelectorAll('.section');
-  sections.forEach(sec => sec.classList.remove('active'));
-
-  const navItems = document.querySelectorAll('.nav-item');
-  navItems.forEach(item => item.classList.remove('active'));
-
-  document.getElementById(sectionId).classList.add('active');
-  if (element) {
-    element.classList.add('active');
-  }
-
-  if(sectionId === 'inicio') {
-    const finCards = document.querySelectorAll('.perm-financial');
-    finCards.forEach(c => {
-      usuarioActual.rol === 'masajista' ? c.classList.add('hidden') : c.classList.remove('hidden');
-    });
-    initChart();
-  }
-}
-
-// PARAMETRIZACIÓN SIN CÓDIGO (EN VIVO)
-function saveLiveConfig() {
-  configuracionGlobal.tituloSpa = document.getElementById('cfgTitle').value.trim();
-  configuracionGlobal.ingresos = document.getElementById('cfgIngresos').value.trim();
-  configuracionGlobal.reservas = parseInt(document.getElementById('cfgReservas').value) || 0;
-
-  localStorage.setItem('config_global_spa', JSON.stringify(configuracionGlobal));
-  applyLiveSettings();
-  alert("✨ ¡Configuraciones cambiadas en vivo sin tocar código!");
-}
-
-// INYECTAR TAREAS SCRUM EN VIVO
-function addLiveTask() {
-  const title = document.getElementById('taskTitle').value.trim();
-  const desc = document.getElementById('taskDesc').value.trim();
-  const col = document.getElementById('taskCol').value;
-
-  if(!title || !desc) {
-    alert("Completa campos de tarea.");
-    return;
-  }
-
-  scrumTareas.push({ id: Date.now(), titulo: title, desc: desc, col: col, prio: "medium" });
-  localStorage.setItem('scrum_spa', JSON.stringify(scrumTareas));
-  renderScrumBoard();
-  
-  document.getElementById('taskTitle').value = "";
-  document.getElementById('taskDesc').value = "";
-  alert("📋 Tarea añadida al tablero.");
-}
-
-// RENDER SCRUM
-function renderScrumBoard() {
-  const container = document.getElementById('scrumBoardContainer');
-  if(!container) return;
-
-  container.innerHTML = `
-    <div class="scrum-column"><div class="column-header column-backlog">Backlog</div><div class="scrum-tasks" id="col-backlog"></div></div>
-    <div class="scrum-column"><div class="column-header column-progress">En Progreso</div><div class="scrum-tasks" id="col-progress"></div></div>
-    <div class="scrum-column"><div class="column-header column-done">Finalizado</div><div class="scrum-tasks" id="col-done"></div></div>
-  `;
-
-  scrumTareas.forEach(t => {
-    const taskDiv = document.createElement('div');
-    taskDiv.className = `task-card ${t.col === 'done' ? 'done' : ''}`;
-    taskDiv.innerHTML = `<h4>${t.titulo}</h4><p>${t.desc}</p><span class="task-priority ${t.prio}">${t.prio}</span>`;
-    const targetCol = document.getElementById(`col-${t.col}`);
-    if(targetCol) targetCol.appendChild(taskDiv);
-  });
-}
-
-// REGISTROS PERSISTENTES
-function register() {
-  const name = document.getElementById('registerName').value.trim();
-  const email = document.getElementById('registerEmail').value.trim().toLowerCase();
-  const password = document.getElementById('registerPassword').value.trim();
-  const role = document.getElementById('registerRole').value;
-
-  if (!name || !email || !password) {
-    alert("Completa todos los datos.");
-    return;
-  }
-
-  usuariosDB.push({ nombre: name, rol: role, email: email, password: password });
-  localStorage.setItem('usuarios_spa', JSON.stringify(usuariosDB));
-  actualizarTablaUsuarios();
-
-  alert(`Cuenta creada con éxito.`);
-  backLogin();
-}
-
-function actualizarTablaUsuarios() {
-  const tbody = document.getElementById('usuariosTableBody');
-  if(!tbody) return;
-  tbody.innerHTML = "";
-
-  usuariosDB.forEach(user => {
-    const tr = document.createElement('tr');
-    let textoRol = user.rol === 'dueño' ? 'Dueño / Admin' : user.rol;
-    tr.innerHTML = `<td><strong>${user.nombre}</strong></td><td><span class="badge role-${user.rol}">${textoRol}</span></td><td><span class="status-dot online"></span> Activo</td>`;
-    tbody.appendChild(tr);
-  });
-}
-
-function showRegister() { document.getElementById('loginContainer').classList.add('hidden'); document.getElementById('registerContainer').classList.remove('hidden'); }
-function backLogin() { document.getElementById('registerContainer').classList.add('hidden'); document.getElementById('loginContainer').classList.remove('hidden'); }
-
-function logout() {
-  usuarioActual = null;
-  document.getElementById('loginEmail').value = "";
-  document.getElementById('loginPassword').value = "";
-  document.getElementById('dashboard').classList.add('hidden');
-  document.getElementById('authWrapper').classList.remove('hidden');
-}
-
-// CONTROL CHART
-function initChart() {
-  const ctx = document.getElementById('myChart');
-  if (!ctx) return;
-  if (myChartInstance !== null) myChartInstance.destroy();
-
-  myChartInstance = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
-      datasets: [{
-        label: 'Citas',
-        data: [14, 20, 18, 29, 36, 42, 22],
-        backgroundColor: 'rgba(74, 107, 93, 0.05)',
-        borderColor: '#4a6b5d',
-        borderWidth: 3,
-        tension: 0.35,
-        pointBackgroundColor: '#c5a059',
-        pointBorderColor: '#fff',
-        pointRadius: 5
-      }]
-    },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#e3ede8' } }, x: { grid: { display: false } } } }
-  });
-}
+  <script src="app.js"></script>
+</body>
+</html>
