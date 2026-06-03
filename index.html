@@ -25,7 +25,7 @@
       </div>
       
       <button class="btn btn-primary" onclick="login()">Iniciar Sesión</button>
-      <button class="btn btn-secondary" onclick="showRegister()">Registrarse</button>
+      <button class="btn btn-secondary" onclick="showRegister()">Registrarse como Cliente</button>
     </div>
 
     <div class="login-card hidden" id="registerContainer">
@@ -68,6 +68,11 @@
       
       <ul id="sidebarMenu">
         </ul>
+      
+      <div class="sidebar-location-box">
+        📍 <strong>Ubicación:</strong>
+        <p id="sidebarLocationText">Cargando dirección...</p>
+      </div>
     </aside>
 
     <main class="main-content">
@@ -82,21 +87,21 @@
           <div class="card card-accent">
             <div class="card-icon">📅</div>
             <div>
-              <h3>Reservas Hoy</h3>
+              <h3>Reservas Totales</h3>
               <p class="card-value" id="statsReservas">24</p>
             </div>
           </div>
           <div class="card card-accent perm-financial">
             <div class="card-icon">👥</div>
             <div>
-              <h3>Clientes Totales</h3>
-              <p class="card-value">120</p>
+              <h3>Clientes Registrados</h3>
+              <p class="card-value" id="statsClientes">120</p>
             </div>
           </div>
           <div class="card card-accent perm-financial">
             <div class="card-icon">💰</div>
             <div>
-              <h3>Ingresos Mensuales</h3>
+              <h3>Ingresos Estimados</h3>
               <p class="card-value" id="statsIngresos">$2.500.000</p>
             </div>
           </div>
@@ -113,41 +118,54 @@
       <section id="vista-cliente" class="section">
         <div class="section-header">
           <h1 id="welcomeCliente">¡Bienvenido a Tu Portal!</h1>
-          <p>Gestiona tus terapias de bienestar y relajación.</p>
+          <p>Gestiona tus terapias de bienestar, compra masajes y agenda citas.</p>
         </div>
-        <div class="cards-grid">
-          <div class="card">
-            <div class="card-icon">✨</div>
-            <div>
-              <h3>Puntos de Fidelidad</h3>
-              <p class="card-value">450 pts</p>
+        
+        <h2>🌿 Nuestro Catálogo de Bienestar</h2>
+        <div class="catalog-grid" id="catalogGrid">
+          </div>
+
+        <div class="booking-form-box">
+          <h3>📅 Agendar una Cita Nueva</h3>
+          <p class="subtitle-box">Selecciona el tratamiento que compraste o deseas tomar:</p>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label>Selecciona el Servicio:</label>
+              <select id="reservaServicio">
+                <option value="Masaje Relajante Piedras Volcánicas">Masaje Relajante Piedras Volcánicas - $45.000</option>
+                <option value="Terapia Descontracturante Profunda">Terapia Descontracturante Profunda - $55.000</option>
+                <option value="Facial Hidratante Orgánico">Facial Hidratante Orgánico - $35.000</option>
+                <option value="Circuito de Sauna y Jacuzzi Extremo">Circuito de Sauna y Jacuzzi Extremo - $60.000</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Fecha y Hora:</label>
+              <input type="datetime-local" id="reservaFechaHora">
+            </div>
+            <div class="form-group">
+              <label>Especialista sugerido:</label>
+              <select id="reservaEspecialista">
+                <option value="Valentina Donoso">Valentina Donoso (Masajista)</option>
+                <option value="Cualquier especialista disponible">Cualquier especialista disponible</option>
+              </select>
             </div>
           </div>
-          <div class="card">
-            <div class="card-icon">🌸</div>
-            <div>
-              <h3>Próxima Cita</h3>
-              <p class="card-value" style="font-size: 1.2rem; margin-top:5px;">Piedras Volcánicas (10:00 AM)</p>
-            </div>
-          </div>
-        </div>
-        <div style="margin-top: 30px; background: white; padding: 25px; border-radius: 12px; box-shadow: var(--shadow-soft);">
-          <h3>Solicitar Nueva Reserva</h3>
-          <p style="color: var(--text-muted); margin-bottom: 15px;">Selecciona un servicio disponible para agendar.</p>
-          <button class="btn btn-primary" style="width: auto; padding: 10px 25px;">Agendar Masaje</button>
+          <button class="btn btn-primary" style="width: auto; padding: 12px 30px; margin-top: 15px;" onclick="crearReservaCliente()">Confirmar y Agendar Cita</button>
         </div>
       </section>
 
       <section id="usuarios" class="section">
         <div class="section-header">
           <h1>Gestión de Personal y Clientes</h1>
-          <p>Control de acceso de usuarios registrados</p>
+          <p>Control de acceso de usuarios registrados (Sincronizado en tiempo real)</p>
         </div>
         <div class="table-container">
           <table class="spa-table">
             <thead>
               <tr>
                 <th>Nombre</th>
+                <th>Correo Electrónico</th>
                 <th>Rol Asignado</th>
                 <th>Estado</th>
               </tr>
@@ -161,19 +179,10 @@
       <section id="reservas" class="section">
         <div class="section-header">
           <h1>Próximas Reservas</h1>
-          <p>Tratamientos programados en la jornada</p>
+          <p>Tratamientos programados en la jornada por los clientes</p>
         </div>
         <div class="bookings-grid" id="bookingsGrid">
-          <div class="booking-card">
-            <div class="booking-time">10:00 AM</div>
-            <div class="booking-body">
-              <h3>Masaje Relajante Piedras Volcánicas</h3>
-              <p><strong>Cliente:</strong> Marta del Carmen</p>
-              <p><strong>Especialista:</strong> Valentina Donoso</p>
-            </div>
-            <span class="booking-status status-confirmed">Confirmado</span>
           </div>
-        </div>
       </section>
 
       <section id="scrum" class="section">
@@ -193,25 +202,25 @@
         
         <div class="config-container">
           <div class="config-card-form">
-            <h3>Personalización Visual</h3>
+            <h3>Personalización Visual y Datos</h3>
             <div class="form-group">
               <label>Nombre Comercial del SPA:</label>
               <input type="text" id="cfgTitle" value="TRANQUILIDAD SPA">
+            </div>
+            <div class="form-group">
+              <label>📍 Dirección Física del SPA (Ubicación):</label>
+              <input type="text" id="cfgUbicacion" value="Av. Vitacura 4500, Santiago">
             </div>
             <button class="btn btn-primary" onclick="saveLiveConfig()">Aplicar Cambios Globales</button>
           </div>
 
           <div class="config-card-form">
-            <h3>Control Operativo y Métricas</h3>
+            <h3>Control Operativo Dinámico</h3>
             <div class="form-group">
               <label>Simular Ingresos Mensuales ($):</label>
               <input type="text" id="cfgIngresos" value="$2.500.000">
             </div>
-            <div class="form-group">
-              <label>Simular Citas Totales:</label>
-              <input type="number" id="cfgReservas" value="24">
-            </div>
-            <button class="btn btn-primary" onclick="saveLiveConfig()">Actualizar Métricas</button>
+            <button class="btn btn-primary" onclick="saveLiveConfig()">Actualizar Métricas financieros</button>
           </div>
 
           <div class="config-card-form">
