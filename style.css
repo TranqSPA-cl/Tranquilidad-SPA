@@ -1,110 +1,329 @@
-:root {
-  --bg-nature: #f4ece1;
-  --bg-card: #ffffff;
-  --primary-spa: #4a6b5d;
-  --primary-light: #608876;
-  --accent-gold: #c5a059;
-  --text-dark: #2c3e35;
-  --text-muted: #708278;
-  --border-color: #e3ede8;
-  --shadow-soft: 0 10px 30px rgba(74, 107, 93, 0.08);
-  --radius: 12px;
-  --transition: all 0.3s ease;
+let myChartInstance = null;
+
+// Base de datos de Usuarios
+let usuariosDB = JSON.parse(localStorage.getItem('usuarios_spa')) || [
+  { nombre: "Ramiro Vasquez", rol: "dueño", email: "ramiro@spa.com", password: "ramiro123" },
+  { nombre: "Valentina Donoso", rol: "masajista", email: "valentina@spa.com", password: "vale2026" },
+  { nombre: "Marta del Carmen", rol: "cliente", email: "marta@spa.com", password: "marta77" },
+  { nombre: "Juan Riquelme", rol: "recepcionista", email: "juan@spa.com", password: "juanrecep" }
+];
+
+// Base de datos de Reservas reales añadidas por el cliente
+let reservasDB = JSON.parse(localStorage.getItem('reservas_spa')) || [
+  { id: 1, servicio: "Masaje Relajante Piedras Volcánicas", cliente: "Marta del Carmen", especialista: "Valentina Donoso", fechaHora: "2026-06-15T10:00" }
+];
+
+// Catálogo estático de ventas para interactuar
+const catalogoVentas = [
+  { id: 'm1', titulo: "Masaje Piedras Volcánicas", desc: "Alineación de chakras usando piedras volcánicas calientes y aceites orgánicos.", precio: "$45.000" },
+  { id: 'm2', titulo: "Terapia Descontracturante", desc: "Masaje intenso enfocado en aliviar tensiones profundas y nudos musculares.", precio: "$55.000" },
+  { id: 'm3', titulo: "Facial Hidratante Orgánico", desc: "Limpieza profunda con extractos botánicos naturales para refrescar tu piel.", precio: "$35.000" },
+  { id: 'm4', titulo: "Circuito Sauna y Jacuzzi", desc: "Acceso completo a saunas secos y de vapor, más jacuzzi con hidromasaje.", precio: "$60.000" }
+];
+
+// Scrum
+let scrumTareas = JSON.parse(localStorage.getItem('scrum_spa')) || [
+  { id: 1, titulo: "Crear Login", desc: "Diseñar interfaz con roles seguros.", col: "backlog", prio: "high" },
+  { id: 2, titulo: "Catálogo de Ventas", desc: "Implementar flujo de compras virtuales.", col: "progress", prio: "high" },
+  { id: 3, titulo: "Dashboard Modular", desc: "Gráficas dinámicas por Chart.js.", col: "done", prio: "high" }
+];
+
+// Parámetros globales editables por Admin Master
+let configuracionGlobal = JSON.parse(localStorage.getItem('config_global_spa')) || {
+  tituloSpa: "TRANQUILIDAD SPA",
+  ingresos: "$2.500.000",
+  ubicacion: "Av. Vitacura 4500, Santiago"
+};
+
+let usuarioActual = null;
+
+document.addEventListener("DOMContentLoaded", () => {
+  applyLiveSettings();
+  actualizarTablaUsuarios();
+  renderScrumBoard();
+  renderCatalogo();
+  renderReservas();
+});
+
+function applyLiveSettings() {
+  document.getElementById('siteTitleLogin').innerText = configuracionGlobal.tituloSpa;
+  document.getElementById('siteTitleSidebar').innerText = configuracionGlobal.tituloSpa;
+  document.getElementById('cfgTitle').value = configuracionGlobal.tituloSpa;
+  
+  document.getElementById('statsIngresos').innerText = configuracionGlobal.ingresos;
+  document.getElementById('cfgIngresos').value = configuracionGlobal.ingresos;
+  
+  document.getElementById('sidebarLocationText').innerText = configuracionGlobal.ubicacion;
+  document.getElementById('cfgUbicacion').value = configuracionGlobal.ubicacion;
+
+  document.getElementById('statsClientes').innerText = usuariosDB.filter(u => u.rol === 'cliente').length + 115;
+  document.getElementById('statsReservas').innerText = reservasDB.length + 23;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
-body { background-color: var(--bg-nature); color: var(--text-dark); min-height: 100vh; overflow-x: hidden; }
-h1, h2, h3, .sidebar-brand { font-family: 'Marcellus', serif; }
-.hidden { display: none !important; }
+// RENDER CATÁLOGO DE VENTAS INTERACTIVO
+function renderCatalogo() {
+  const container = document.getElementById('catalogGrid');
+  if (!container) return;
+  container.innerHTML = "";
 
-/* PANTALLA DE ACCESO */
-.auth-wrapper { min-height: 100vh; display: flex; justify-content: center; align-items: center; background: linear-gradient(135deg, #e3ede8 0%, #f4ece1 100%); padding: 20px; }
-.login-card { background: var(--bg-card); padding: 40px; border-radius: 20px; box-shadow: 0 20px 50px rgba(44, 62, 53, 0.1); width: 100%; max-width: 420px; text-align: center; animation: fadeIn 0.5s ease-out; }
-.spa-logo { font-size: 3rem; margin-bottom: 10px; }
-.login-card h1 { font-size: 1.8rem; color: var(--primary-spa); letter-spacing: 1px; margin-bottom: 5px; }
-.subtitle { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 2px; }
-.input-group { margin-bottom: 20px; }
-.input-group input, .input-group select { width: 100%; padding: 14px 20px; border: 1px solid var(--border-color); background-color: #fafbfc; border-radius: var(--radius); font-size: 0.95rem; color: var(--text-dark); outline: none; transition: var(--transition); }
-.input-group input:focus, .input-group select:focus { border-color: var(--primary-spa); background-color: #fff; box-shadow: 0 0 0 4px rgba(74, 107, 93, 0.1); }
+  catalogoVentas.forEach(p => {
+    const card = document.createElement('div');
+    card.className = "product-card";
+    card.innerHTML = `
+      <div>
+        <h3>${p.titulo}</h3>
+        <p>${p.desc}</p>
+      </div>
+      <div>
+        <div class="product-price">${p.precio}</div>
+        <button class="btn btn-primary" onclick="simularCompra('${p.titulo}')">Comprar Tratamiento</button>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
 
-/* BOTONES */
-.btn { width: 100%; padding: 14px; border: none; border-radius: var(--radius); font-size: 1rem; font-weight: 500; cursor: pointer; transition: var(--transition); margin-bottom: 12px; }
-.btn-primary { background-color: var(--primary-spa); color: white; }
-.btn-primary:hover { background-color: var(--primary-light); transform: translateY(-1px); }
-.btn-secondary { background-color: transparent; color: var(--primary-spa); border: 1px solid var(--primary-spa); }
-.btn-secondary:hover { background-color: rgba(74, 107, 93, 0.05); }
+function simularCompra(nombreServicio) {
+  alert(`🛒 ¡Tratamiento "${nombreServicio}" adquirido con éxito!\nAhora puedes seleccionarlo en el formulario de abajo para agendar tu día y hora.`);
+}
 
-/* DASHBOARD */
-.dashboard { display: flex; min-height: 100vh; }
-.sidebar { width: 260px; background-color: var(--primary-spa); color: white; padding: 30px 20px; display: flex; flex-direction: column; flex-shrink: 0; }
-.sidebar-brand { font-size: 1.5rem; letter-spacing: 1px; margin-bottom: 30px; display: flex; align-items: center; gap: 10px; }
-.user-profile-status { background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: var(--radius); margin-bottom: 30px; }
-.user-profile-status p { font-weight: 500; font-size: 0.95rem; }
-.badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; text-transform: uppercase; font-weight: 600; margin-top: 5px; background: var(--accent-gold); color: white; }
-.sidebar ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
-.nav-item { padding: 14px 18px; border-radius: var(--radius); cursor: pointer; transition: var(--transition); display: flex; align-items: center; gap: 12px; font-size: 0.95rem; opacity: 0.85; }
-.nav-item:hover, .nav-item.active { background-color: rgba(255, 255, 255, 0.15); opacity: 1; transform: translateX(4px); }
-.logout-item { margin-top: auto; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 20px; color: #ff9e9e; }
+// CREAR RESERVA DESDE EL PORTAL DE CLIENTE
+function crearReservaCliente() {
+  const servicio = document.getElementById('reservaServicio').value;
+  const fechaHora = document.getElementById('reservaFechaHora').value;
+  const especialista = document.getElementById('reservaEspecialista').value;
 
-.main-content { flex-grow: 1; background-color: var(--bg-nature); padding: 40px; overflow-y: auto; }
-.section { display: none; animation: fadeIn 0.4s ease-out; }
-.section.active { display: block; }
-.section-header { margin-bottom: 35px; }
-.section-header h1 { font-size: 2.2rem; color: var(--primary-spa); margin-bottom: 5px; }
-.section-header p { color: var(--text-muted); }
+  if (!fechaHora) {
+    alert("❌ Por favor, selecciona una fecha y hora válidas para tu cita.");
+    return;
+  }
 
-/* VISTAS EN CUADRÍCULA */
-.cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 25px; margin-bottom: 40px; }
-.card { background: var(--bg-card); padding: 25px; border-radius: var(--radius); box-shadow: var(--shadow-soft); display: flex; align-items: center; gap: 20px; border-left: 4px solid var(--accent-gold); }
-.card-icon { font-size: 2rem; background: #f4ece1; width: 55px; height: 55px; display: flex; justify-content: center; align-items: center; border-radius: 50%; }
-.card h3 { font-size: 0.95rem; color: var(--text-muted); font-weight: 400; }
-.card-value { font-size: 1.7rem; font-weight: 600; color: var(--primary-spa); }
+  const nuevaCita = {
+    id: Date.now(),
+    servicio: servicio,
+    cliente: usuarioActual ? usuarioActual.nombre : "Cliente Web",
+    especialista: especialista,
+    fechaHora: fechaHora
+  };
 
-/* TABLAS Y GRÁFICOS */
-.chart-wrapper { background: var(--bg-card); padding: 30px; border-radius: var(--radius); box-shadow: var(--shadow-soft); margin-bottom: 30px; }
-.chart-container { position: relative; height: 300px; width: 100%; }
-.table-container { background: var(--bg-card); border-radius: var(--radius); box-shadow: var(--shadow-soft); overflow: hidden; }
-.spa-table { width: 100%; border-collapse: collapse; text-align: left; }
-.spa-table th { background-color: #ebdcc9; padding: 16px 20px; color: var(--primary-spa); font-weight: 600; }
-.spa-table td { padding: 16px 20px; border-bottom: 1px solid var(--border-color); }
-.status-dot { display: inline-block; width: 8px; height: 8px; background-color: #2ecc71; border-radius: 50%; margin-right: 6px; }
+  reservasDB.push(nuevaCita);
+  localStorage.setItem('reservas_spa', JSON.stringify(reservasDB));
+  
+  renderReservas();
+  applyLiveSettings(); // Actualizar contadores
 
-/* BADGES DE ROLES */
-.badge.role-dueño { background-color: #641e16; color: white; }
-.badge.role-masajista { background-color: #196f3d; color: white; }
-.badge.role-recepcionista { background-color: #21618c; color: white; }
-.badge.role-cliente { background-color: #7f8c8d; color: white; }
+  alert("📅 ¡Tu cita ha sido agendada con éxito! Ya fue enviada al tablero interno de administración del SPA.");
+}
 
-/* RESERVAS CARD */
-.bookings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
-.booking-card { background: var(--bg-card); padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow-soft); border-top: 4px solid var(--primary-spa); display: flex; flex-direction: column; gap: 12px; }
-.booking-time { font-weight: 600; color: var(--accent-gold); }
-.booking-body h3 { font-size: 1.1rem; color: var(--primary-spa); margin-bottom: 5px; }
-.booking-status { align-self: flex-start; font-size: 0.8rem; padding: 4px 10px; border-radius: 12px; background: #eef9f3; color: #27ae60; }
+// RENDERIZAR RESERVAS EN LA TABLA/GRID
+function renderReservas() {
+  const container = document.getElementById('bookingsGrid');
+  if (!container) return;
+  container.innerHTML = "";
 
-/* TABLERO SCRUM */
-.scrum-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; }
-.scrum-column { background: rgba(255, 255, 255, 0.5); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow-soft); }
-.column-header { font-weight: 600; padding: 10px; border-radius: 8px; margin-bottom: 20px; color: white; text-align: center; }
-.column-backlog { background-color: #7f8c8d; }
-.column-progress { background-color: var(--accent-gold); }
-.column-done { background-color: var(--primary-spa); }
-.scrum-tasks { display: flex; flex-direction: column; gap: 15px; }
-.task-card { background: var(--bg-card); padding: 18px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.02); border-left: 3px solid #ccc; }
-.task-card h4 { color: var(--primary-spa); margin-bottom: 4px; }
-.task-card p { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px; }
-.task-priority { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 500; text-transform: uppercase; }
-.task-priority.high { background: #fce4e4; color: #cc3333; }
-.task-priority.medium { background: #fff3cd; color: #856404; }
-.task-priority.low { background: #d4edda; color: #155724; }
-.task-card.done { border-left-color: #2ecc71; opacity: 0.75; }
+  if(reservasDB.length === 0) {
+    container.innerHTML = "<p style='color: var(--text-muted);'>No hay citas programadas actualmente.</p>";
+    return;
+  }
 
-/* MÓDULO CONFIGURADOR LIVE */
-.config-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 25px; }
-.config-card-form { background: white; padding: 25px; border-radius: var(--radius); box-shadow: var(--shadow-soft); }
-.config-card-form h3 { color: var(--primary-spa); margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
-.form-group { margin-bottom: 15px; display: flex; flex-direction: column; gap: 6px; }
-.form-group label { font-size: 0.9rem; font-weight: 500; color: var(--text-dark); }
-.form-group input, .form-group select { padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; outline: none; }
+  reservasDB.forEach(res => {
+    const dateParsed = new Date(res.fechaHora).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
+    const div = document.createElement('div');
+    div.className = "booking-card";
+    div.innerHTML = `
+      <div class="booking-time">⏰ ${dateParsed}</div>
+      <div class="booking-body">
+        <h3>${res.servicio}</h3>
+        <p><strong>Cliente:</strong> ${res.cliente}</p>
+        <p><strong>Especialista:</strong> ${res.especialista}</p>
+      </div>
+      <span class="booking-status">Confirmado</span>
+    `;
+    container.appendChild(div);
+  });
+}
 
-@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+// LOGIN EVALUADO POR ROL
+function login() {
+  const emailInput = document.getElementById('loginEmail').value.trim().toLowerCase();
+  const passwordInput = document.getElementById('loginPassword').value.trim();
+
+  if(!emailInput || !passwordInput) {
+    alert("Ingresa tus credenciales por favor.");
+    return;
+  }
+
+  const usuario = usuariosDB.find(u => u.email === emailInput && u.password === passwordInput);
+  
+  if(!usuario) {
+    alert("❌ Error: Correo o contraseña incorrectos.");
+    return;
+  }
+
+  usuarioActual = usuario;
+  document.getElementById('userDisplay').innerText = usuario.nombre;
+  document.getElementById('roleDisplay').innerText = usuario.rol.toUpperCase();
+
+  construirMenuLateral(usuario.rol);
+  document.getElementById('authWrapper').classList.add('hidden');
+  document.getElementById('dashboard').classList.remove('hidden');
+
+  if(usuario.rol === 'cliente') {
+    document.getElementById('welcomeCliente').innerText = `¡Bienvenido, ${usuario.nombre}!`;
+    showSection('vista-cliente');
+  } else {
+    showSection('inicio');
+  }
+}
+
+function construirMenuLateral(rol) {
+  const menuContainer = document.getElementById('sidebarMenu');
+  menuContainer.innerHTML = "";
+
+  const opciones = [
+    { id: 'inicio', texto: '📊 Inicio Dashboard', roles: ['dueño', 'recepcionista', 'masajista'] },
+    { id: 'vista-cliente', texto: '🌸 Portal & Ventas', roles: ['cliente'] },
+    { id: 'usuarios', texto: '👥 Ver Usuarios', roles: ['dueño', 'recepcionista'] },
+    { id: 'reservas', texto: '📅 Próximas Citas', roles: ['dueño', 'recepcionista', 'masajista'] },
+    { id: 'scrum', texto: '📋 Scrum Board', roles: ['dueño'] },
+    { id: 'configuracion', texto: '⚙️ Admin Master', roles: ['dueño'] }
+  ];
+
+  opciones.forEach(opc => {
+    if(opc.roles.includes(rol)) {
+      const li = document.createElement('li');
+      li.className = "nav-item";
+      li.innerHTML = opc.texto;
+      li.onclick = function() { showSection(opc.id, this); };
+      menuContainer.appendChild(li);
+    }
+  });
+
+  const logoutLi = document.createElement('li');
+  logoutLi.className = "nav-item logout-item";
+  logoutLi.innerHTML = "🚪 Cerrar Sesión";
+  logoutLi.onclick = logout;
+  menuContainer.appendChild(logoutLi);
+}
+
+function showSection(sectionId, element) {
+  if(!usuarioActual) return;
+
+  const reglasAcceso = {
+    'inicio': ['dueño', 'recepcionista', 'masajista'],
+    'vista-cliente': ['cliente'],
+    'usuarios': ['dueño', 'recepcionista'],
+    'reservas': ['dueño', 'recepcionista', 'masajista'],
+    'scrum': ['dueño'],
+    'configuracion': ['dueño']
+  };
+
+  if(!reglasAcceso[sectionId].includes(usuarioActual.rol)) {
+    alert("⛔ Acceso denegado.");
+    return;
+  }
+
+  document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+
+  document.getElementById(sectionId).classList.add('active');
+  if (element) element.classList.add('active');
+
+  if(sectionId === 'inicio') {
+    document.querySelectorAll('.perm-financial').forEach(c => {
+      usuarioActual.rol === 'masajista' ? c.classList.add('hidden') : c.classList.remove('hidden');
+    });
+    initChart();
+  }
+}
+
+// PARAMETRIZACIÓN DESDE PANTALLA ADMIN
+function saveLiveConfig() {
+  configuracionGlobal.tituloSpa = document.getElementById('cfgTitle').value.trim();
+  configuracionGlobal.ingresos = document.getElementById('cfgIngresos').value.trim();
+  configuracionGlobal.ubicacion = document.getElementById('cfgUbicacion').value.trim();
+
+  localStorage.setItem('config_global_spa', JSON.stringify(configuracionGlobal));
+  applyLiveSettings();
+  alert("✨ ¡Ubicación, métricas y nombre cambiados exitosamente en todo el sistema!");
+}
+
+// REGISTROS REALES Y PERSISTENTES EN LOCALSTORAGE
+function register() {
+  const name = document.getElementById('registerName').value.trim();
+  const email = document.getElementById('registerEmail').value.trim().toLowerCase();
+  const password = document.getElementById('registerPassword').value.trim();
+  const role = document.getElementById('registerRole').value;
+
+  if (!name || !email || !password) {
+    alert("Completa todos los datos.");
+    return;
+  }
+
+  // Validar duplicado
+  if(usuariosDB.some(u => u.email === email)) {
+    alert("❌ Este correo ya está registrado en el SPA.");
+    return;
+  }
+
+  usuariosDB.push({ nombre: name, rol: role, email: email, password: password });
+  localStorage.setItem('usuarios_spa', JSON.stringify(usuariosDB));
+  
+  actualizarTablaUsuarios();
+  applyLiveSettings();
+
+  alert(`✅ ¡Cuenta de ${role.toUpperCase()} creada con éxito!\nYa puedes iniciar sesión con tus credenciales.`);
+  backLogin();
+}
+
+function actualizarTablaUsuarios() {
+  const tbody = document.getElementById('usuariosTableBody');
+  if(!tbody) return;
+  tbody.innerHTML = "";
+
+  usuariosDB.forEach(user => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td><strong>${user.nombre}</strong></td><td>${user.email}</td><td><span class="badge role-${user.rol}">${user.rol}</span></td><td><span class="status-dot"></span> Activo</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function addLiveTask() {
+  const title = document.getElementById('taskTitle').value.trim();
+  const desc = document.getElementById('taskDesc').value.trim();
+  const col = document.getElementById('taskCol').value;
+  if(!title || !desc) return alert("Completa campos.");
+  scrumTareas.push({ id: Date.now(), titulo: title, desc: desc, col: col, prio: "medium" });
+  localStorage.setItem('scrum_spa', JSON.stringify(scrumTareas));
+  renderScrumBoard();
+  document.getElementById('taskTitle').value = ""; document.getElementById('taskDesc').value = "";
+}
+
+function renderScrumBoard() {
+  const container = document.getElementById('scrumBoardContainer');
+  if(!container) return;
+  container.innerHTML = `
+    <div class="scrum-column"><div class="column-header column-backlog">Backlog</div><div class="scrum-tasks" id="col-backlog"></div></div>
+    <div class="scrum-column"><div class="column-header column-progress">En Progreso</div><div class="scrum-tasks" id="col-progress"></div></div>
+    <div class="scrum-column"><div class="column-header column-done">Finalizado</div><div class="scrum-tasks" id="col-done"></div></div>
+  `;
+  scrumTareas.forEach(t => {
+    const div = document.createElement('div'); div.className = "task-card";
+    div.innerHTML = `<h4>${t.titulo}</h4><p>${t.desc}</p><span class="task-priority ${t.prio}">${t.prio}</span>`;
+    const colEl = document.getElementById(`col-${t.col}`); if(colEl) colEl.appendChild(div);
+  });
+}
+
+function showRegister() { document.getElementById('loginContainer').classList.add('hidden'); document.getElementById('registerContainer').classList.remove('hidden'); }
+function backLogin() { document.getElementById('registerContainer').classList.add('hidden'); document.getElementById('loginContainer').classList.remove('hidden'); }
+function logout() { usuarioActual = null; document.getElementById('dashboard').classList.add('hidden'); document.getElementById('authWrapper').classList.remove('hidden'); }
+
+function initChart() {
+  const ctx = document.getElementById('myChart'); if (!ctx) return;
+  if (myChartInstance !== null) myChartInstance.destroy();
+  myChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: { labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'], datasets: [{ label: 'Citas', data: [14, 20, 18, 29, 36, 42, reservasDB.length + 21], backgroundColor: 'rgba(74, 107, 93, 0.05)', borderColor: '#4a6b5d', borderWidth: 3, tension: 0.35 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+  });
+}
